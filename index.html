@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Поиск сообщений в Telegram</title>
+</head>
+<body style="font-family:sans-serif; padding:20px;">
+  <h2>Поиск сообщений с вопросами (?)</h2>
+  <input type="text" id="chatUrl" placeholder="https://t.me/..." style="width:300px; padding:5px;">
+  <button onclick="searchMessages()">Искать</button>
+
+  <div id="results" style="margin-top:20px;"></div>
+
+  <script>
+    function extractUsername(url) {
+      try {
+        const u = new URL(url);
+        return u.pathname.replace('/', '');
+      } catch {
+        return null;
+      }
+    }
+
+    async function searchMessages() {
+      const input = document.getElementById('chatUrl').value;
+      const username = extractUsername(input);
+      const results = document.getElementById('results');
+
+      if (!username) {
+        results.innerHTML = "❌ Неверная ссылка";
+        return;
+      }
+
+      results.innerHTML = "⏳ Ищем...";
+      const res = await fetch('/search?chat=' + username);
+      const data = await res.json();
+
+      if (data.error) {
+        results.innerHTML = "❌ Ошибка: " + data.error;
+      } else {
+        results.innerHTML = data.messages.map(m => `<p>${m}</p>`).join('') || "❌ Ничего не найдено.";
+      }
+    }
+  </script>
+</body>
+</html>

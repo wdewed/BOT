@@ -1,0 +1,34 @@
+from telethon import TelegramClient
+from flask import Flask, request, jsonify
+import asyncio
+
+api_id = 21879379
+api_hash = '60fe0ed040a1b41c77cf69f0288b2b66'
+phone_number = '+YOUR_PHONE_NUMBER'  # ВАЖНО: здесь укажи свой номер Telegram
+
+app = Flask(__name__)
+loop = asyncio.get_event_loop()
+client = TelegramClient('session', api_id, api_hash, loop=loop)
+
+@app.route('/search', methods=['GET'])
+def search():
+    chat_username = request.args.get('chat')
+    if not chat_username:
+        return jsonify({'error': 'No chat provided'}), 400
+
+    async def get_messages():
+        await client.start(phone_number)
+        chat = await client.get_entity(chat_username)
+        messages = await client.get_messages(chat, limit=100)
+        filtered = [m.text for m in messages if m.text and '?' in m.text]
+        return filtered
+
+    try:
+        messages = loop.run_until_complete(get_messages())
+        return jsonify({'messages': messages})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+if __name__ == '__main__':
+    loop.run_until_complete(client.start(phone_number))
+    app.run(host='0.0.0.0', port=5000)
